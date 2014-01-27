@@ -3,6 +3,15 @@
 
     <string name="app_name">DropboxEPubs</string>
     <string name="action_settings">Settings</string>
-    <string name="hello_world">Hello world!</string>
-
+    <string name="hello_world">Introduce tus datos para iniciar sesión en Dropbox \n</string>
+    <string name="tv_email">Email: </string>
+    <string name="tv_pass">Contraseña: </string>
+    <string name="tv_ordenar">Ordenar por: </string>
+    <string name="btn_entrar">Entrar</string>
+    <string name="btn_borrar">Borrar</string>
+    <string name="title_activity_book_list">Lista de libros</string>
+    <string name="title_activity_book_detail">Detalle de libro</string>
+    <string name="btn_ordenar">Ir</string>
+    <string name="cover_desc">Descripcion</string>
+       
 </resources>

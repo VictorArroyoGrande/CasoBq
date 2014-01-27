@@ -22,6 +22,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="caso.victor_arroyo.dropboxepubs.BookListActivity"
+                  android:label="@string/title_activity_book_list" >
+
+        </activity>
+         <activity android:name="caso.victor_arroyo.dropboxepubs.BookDetails"
+                  android:label="@string/title_activity_book_detail" >
+
+        </activity>
     </application>
 
 </manifest>
