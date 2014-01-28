@@ -32,7 +32,7 @@ public final class R {
         public static final int FrgListadoLibros=0x7f080002;
         public static final int LblFecha=0x7f080010;
         public static final int LblNombre=0x7f080011;
-        public static final int LblTelefono=0x7f080012;
+        public static final int LblOtro=0x7f080012;
         public static final int LstListadoLibros=0x7f08000f;
         public static final int action_settings=0x7f080013;
         public static final int et_email=0x7f080006;
