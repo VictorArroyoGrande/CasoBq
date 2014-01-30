@@ -15,7 +15,9 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme" 
+        android:name="caso.victor_arroyo.dropboxepubs.GlobalStuff">
+        
         <activity
             android:name="caso.victor_arroyo.dropboxepubs.MainActivity"
             android:label="@string/app_name" >

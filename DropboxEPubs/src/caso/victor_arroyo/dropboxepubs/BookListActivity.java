@@ -1,7 +1,6 @@
 package caso.victor_arroyo.dropboxepubs;
 
 import caso.victor_arroyo.dropboxepubs.BookListFragment.LibrosListener;
-import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -56,7 +55,7 @@ public class BookListActivity extends FragmentActivity implements
 	}
 
 	@Override
-	public void onLibroSeleccionado(Libro l) {
+	public void onLibroSeleccionado(Epub l) {
 		Context context1 = getApplicationContext();
 		CharSequence text = "Pulsado libro: " + l.getNombre() + " - "
 				+ l.getFecha();
@@ -70,6 +69,8 @@ public class BookListActivity extends FragmentActivity implements
 		// Creamos la información a pasar entre actividades
 		Bundle b = new Bundle();
 		b.putString("NOMBRE", l.getNombre());
+		b.putString("FECHA", l.getFecha());
+		b.putString("CACHEPATH", l.getCachePath());
 
 		// Añadimos la información al intent
 		intent.putExtras(b);

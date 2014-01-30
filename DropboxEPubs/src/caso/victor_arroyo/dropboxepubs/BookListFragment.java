@@ -1,8 +1,10 @@
 package caso.victor_arroyo.dropboxepubs;
 
+import java.util.List;
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,9 +17,10 @@ import android.widget.AdapterView.OnItemClickListener;
 public class BookListFragment extends Fragment{
 
 	private ListView lstListado;
-	//private Libro[] datos = new Libro[1000];
-	private Libro[] datos = {new Libro("nombre1","fecha1"),new Libro("nombre2","fecha2"),new Libro("nombre3","fecha3"),new Libro("nombre4","fecha4"),new Libro("nombre5","fecha5"),new Libro("nombre6","fecha6"),new Libro("nombre7","fecha7")};
+	private Epub[] datos = new Epub[1000];
+	//private Epub[] datos = {new Epub("nombre1","fecha1","","",""),new Epub("nombre2","fecha2","","",""),new Epub("nombre3","fecha3","","",""),new Epub("nombre4","fecha4","","",""),new Epub("nombre5","fecha5","","",""),new Epub("nombre6","fecha6","","",""),new Epub("nombre7","fecha7","","","")};
 	private LibrosListener listener;
+	private DBManager dbm;
 	
 	 @Override
 	    public View onCreateView(LayoutInflater inflater,
@@ -31,6 +34,18 @@ public class BookListFragment extends Fragment{
 	    public void onActivityCreated(Bundle state) {
 	        super.onActivityCreated(state);
 	        
+	        List<Epub> libros;
+			dbm = new DBManager(getActivity());
+			libros = dbm.getEpubsList();
+			datos = new Epub[libros.size()];
+			for (int i = 0; i < libros.size(); i++) {
+				datos[i] = libros.get(i);
+				Log.d("BookListFragment:onActivityCreated",
+						"Elemento copiado: " + i);	
+			}
+			Log.d("BookListFragment:onActivityCreated",
+					"Tamaño lista: " + libros.size());
+	        
 	        lstListado = (ListView)getView().findViewById(R.id.LstListadoLibros);
 	 
 	        lstListado.setAdapter(new AdaptadorLibros(this));
@@ -40,7 +55,7 @@ public class BookListFragment extends Fragment{
 	            public void onItemClick(AdapterView<?> list, View view, int pos, long id) {
 	                if (listener!=null) {
 	                    listener.onLibroSeleccionado(
-	                        (Libro)lstListado.getAdapter().getItem(pos));
+	                        (Epub)lstListado.getAdapter().getItem(pos));
 	                }
 	            }
 	        });
@@ -65,7 +80,7 @@ public class BookListFragment extends Fragment{
 	        });*/
 	    }
 	 
-	    class AdaptadorLibros extends ArrayAdapter<Libro> {
+	    class AdaptadorLibros extends ArrayAdapter<Epub> {
 	 
 	            Activity context;
 	 
@@ -89,7 +104,7 @@ public class BookListFragment extends Fragment{
 	        }
 	    
 	    public interface LibrosListener {
-	        void onLibroSeleccionado(Libro l);
+	        void onLibroSeleccionado(Epub l);
 	    }
 	 
 	    public void setLibrosListener(LibrosListener listener) {

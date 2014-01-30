@@ -21,8 +21,7 @@ public final class R {
         public static final int activity_vertical_margin=0x7f040001;
     }
     public static final class drawable {
-        public static final int ada_lovelace_portrait=0x7f020000;
-        public static final int ic_launcher=0x7f020001;
+        public static final int ic_launcher=0x7f020000;
     }
     public static final class id {
         public static final int BtnBorrar=0x7f08000a;
@@ -37,7 +36,7 @@ public final class R {
         public static final int action_settings=0x7f080013;
         public static final int et_email=0x7f080006;
         public static final int et_pass=0x7f080008;
-        public static final int imageViewLovelace=0x7f080001;
+        public static final int image_view=0x7f080001;
         public static final int rl_campos=0x7f080004;
         public static final int rl_ordenar=0x7f08000b;
         public static final int tv_book_name=0x7f080000;

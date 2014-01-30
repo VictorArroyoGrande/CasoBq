@@ -7,7 +7,6 @@ import com.dropbox.client2.session.TokenPair;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -20,6 +19,7 @@ public class MainActivity extends Activity {
 
 	private DropboxAPI<AndroidAuthSession> mApi;
 	private DropBoxController dbc;
+	GlobalStuff myApp;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +28,8 @@ public class MainActivity extends Activity {
 		// Creamos una instacia de DropboxController que vamos a utilizar para
 		// llevar a cabo el proceso de login con Dropbox
 		dbc = new DropBoxController(getApplicationContext());
+		
+		myApp = ((GlobalStuff)getApplicationContext());
 
 		// Creamos una AuthSession para poder usar la API de Dropbox
 		AndroidAuthSession session = dbc.buildSession();
@@ -42,7 +44,7 @@ public class MainActivity extends Activity {
 		final Button btnEntrar = (Button) findViewById(R.id.BtnLogin);
 		final Button btnBorrar = (Button) findViewById(R.id.BtnBorrar);
 		final EditText et_email = (EditText) findViewById(R.id.et_email);
-		final EditText et_pass = (EditText) findViewById(R.id.et_pass);
+		final EditText et_pass = (EditText) findViewById(R.id.et_pass);		
 
 		// Implementamos la accion ejecutada al pulsar el boton ENTRAR
 		btnEntrar.setOnClickListener(new OnClickListener() {
@@ -53,8 +55,8 @@ public class MainActivity extends Activity {
 				String sPass = et_pass.getText().toString().trim();
 
 				// Comprobamos que los campos no están vacios
-				if ((!sEmail.equals("")) && (!sPass.equals(""))) {			
-					
+				if ((!sEmail.equals("")) && (!sPass.equals(""))) {
+
 					// Comenzamos la autenticacion a través del navegador
 					mApi.getSession().startAuthentication(MainActivity.this);
 				} else {
@@ -76,28 +78,38 @@ public class MainActivity extends Activity {
 				et_pass.setText("");
 			}
 		});
-
 	}
-	
+
 	@Override
-	protected void onResume(){
+	protected void onResume() {
 		super.onResume();
-		
+
+		// Esta parte se ejecuta cuando se ha terminado de autenticar mediante
+		// el navegador
+
 		AndroidAuthSession session = mApi.getSession();
 
-        // The next part must be inserted in the onResume() method of the
-        // activity from which session.startAuthentication() was called, so
-        // that Dropbox authentication completes properly.
-        if (session.authenticationSuccessful()) {
-            try {
-                // Mandatory call to complete the auth
-                session.finishAuthentication();
+		if (session.authenticationSuccessful()) {
+			try {
+				// Completamos la autenticacion
+				session.finishAuthentication();
 
-                // Store it locally in our app for later use
-                TokenPair tokens = session.getAccessTokenPair();
-                dbc.storeKeys(tokens.key, tokens.secret);
-                //setLoggedIn(true);
-                Intent intent = new Intent(MainActivity.this,
+				// Almacenamos los token para que puedan ser utilizados mas
+				// tarde
+				TokenPair tokens = session.getAccessTokenPair();
+				dbc.storeKeys(tokens.key, tokens.secret);
+				// setLoggedIn(true);
+				
+						
+				EpubsDownloader downDialog = new EpubsDownloader(MainActivity.this, mApi);
+				downDialog.execute();
+				
+				myApp.setNombre("hola soy viti");
+				myApp.setmApi(mApi);
+				
+				/*
+				// Lanzamos la actividad que muestra los libros descargados 
+				Intent intent = new Intent(MainActivity.this,
 						BookListActivity.class);
 
 				// Creamos la información a pasar entre actividades
@@ -108,13 +120,18 @@ public class MainActivity extends Activity {
 				intent.putExtras(b);
 
 				// Iniciamos la nueva actividad
-				startActivity(intent);
-            } catch (IllegalStateException e) {
-                //showToast("Couldn't authenticate with Dropbox:" + e.getLocalizedMessage());
-                Log.i("MainActivity:onResume", "Error authenticating", e);
-            }
-        }
-		
+				startActivity(intent);*/
+								
+			} catch (IllegalStateException e) {
+				Context context1 = getApplicationContext();
+				CharSequence text = "No se ha podido autenticar. Error: " + e.getLocalizedMessage();
+				int duration = Toast.LENGTH_SHORT;
+
+				Toast toast = Toast.makeText(context1, text, duration);
+				toast.show();
+				Log.i("MainActivity:onResume", "Error authenticating", e);
+			}
+		}
 	}
 
 	@Override
