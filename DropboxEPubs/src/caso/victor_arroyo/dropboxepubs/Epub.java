@@ -1,14 +1,16 @@
 package caso.victor_arroyo.dropboxepubs;
 
+import java.sql.Date;
+
 public class Epub {
 	
 	private String nombre;
-	private String fecha;
+	private Date fecha;
 	private String nombreArchivo;
 	private String dbPath;
 	private String cachePath;
 	
-	public Epub(String nombre, String fecha, String nombreArchivo, String dbp, String cachep) {
+	public Epub(String nombre, Date fecha, String nombreArchivo, String dbp, String cachep) {
 		super();
 		this.nombre = nombre;
 		this.fecha = fecha;
@@ -40,8 +42,6 @@ public class Epub {
 	public void setCachePath(String cachePath) {
 		this.cachePath = cachePath;
 	}
-
-	
 	
 	public String getNombre() {
 		return nombre;
@@ -49,10 +49,10 @@ public class Epub {
 	public void setNombre(String nombre) {
 		this.nombre = nombre;
 	}
-	public String getFecha() {
+	public Date getFecha() {
 		return fecha;
 	}
-	public void setFecha(String fecha) {
+	public void setFecha(Date fecha) {
 		this.fecha = fecha;
 	}
 

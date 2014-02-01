@@ -20,6 +20,7 @@ public class MainActivity extends Activity {
 	private DropboxAPI<AndroidAuthSession> mApi;
 	private DropBoxController dbc;
 	GlobalStuff myApp;
+	DBManager dbm;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -28,8 +29,10 @@ public class MainActivity extends Activity {
 		// Creamos una instacia de DropboxController que vamos a utilizar para
 		// llevar a cabo el proceso de login con Dropbox
 		dbc = new DropBoxController(getApplicationContext());
+
+		myApp = ((GlobalStuff) getApplicationContext());
 		
-		myApp = ((GlobalStuff)getApplicationContext());
+		dbm = new DBManager(this);
 
 		// Creamos una AuthSession para poder usar la API de Dropbox
 		AndroidAuthSession session = dbc.buildSession();
@@ -44,7 +47,7 @@ public class MainActivity extends Activity {
 		final Button btnEntrar = (Button) findViewById(R.id.BtnLogin);
 		final Button btnBorrar = (Button) findViewById(R.id.BtnBorrar);
 		final EditText et_email = (EditText) findViewById(R.id.et_email);
-		final EditText et_pass = (EditText) findViewById(R.id.et_pass);		
+		final EditText et_pass = (EditText) findViewById(R.id.et_pass);
 
 		// Implementamos la accion ejecutada al pulsar el boton ENTRAR
 		btnEntrar.setOnClickListener(new OnClickListener() {
@@ -84,52 +87,51 @@ public class MainActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 
-		// Esta parte se ejecuta cuando se ha terminado de autenticar mediante
-		// el navegador
+		if (myApp.isLogueado()) {
+			Log.i("MainActivity:onResume", "Saliendo de la sesión.");
+			// Hacemos logout con Dropbox
+			dbc.logOut();
+			// Borramos el contenido de la tabla de base de datos
+			dbm.deleteEpubsTable();
+			// Mostramos un mensaje para advertir al usuario
+			Toast toast = Toast.makeText(getApplicationContext(), "Sesión con Dropbox finalizada.", Toast.LENGTH_LONG);
+			toast.show();			
+			myApp.setLogueado(false);
+		} else {
 
-		AndroidAuthSession session = mApi.getSession();
+			// Esta parte se ejecuta cuando se ha terminado de autenticar
+			// mediante
+			// el navegador
+			AndroidAuthSession session = mApi.getSession();
 
-		if (session.authenticationSuccessful()) {
-			try {
-				// Completamos la autenticacion
-				session.finishAuthentication();
+			if (session.authenticationSuccessful()) {
+				try {
+					Log.i("MainActivity:onResume", "Completando la autenticacion con Dropbox.");
+					// Completamos la autenticacion
+					session.finishAuthentication();
 
-				// Almacenamos los token para que puedan ser utilizados mas
-				// tarde
-				TokenPair tokens = session.getAccessTokenPair();
-				dbc.storeKeys(tokens.key, tokens.secret);
-				// setLoggedIn(true);
-				
-						
-				EpubsDownloader downDialog = new EpubsDownloader(MainActivity.this, mApi);
-				downDialog.execute();
-				
-				myApp.setNombre("hola soy viti");
-				myApp.setmApi(mApi);
-				
-				/*
-				// Lanzamos la actividad que muestra los libros descargados 
-				Intent intent = new Intent(MainActivity.this,
-						BookListActivity.class);
+					// Almacenamos los token para que puedan ser utilizados mas
+					// tarde
+					TokenPair tokens = session.getAccessTokenPair();
+					dbc.storeKeys(tokens.key, tokens.secret);
 
-				// Creamos la información a pasar entre actividades
-				Bundle b = new Bundle();
-				b.putString("NOMBRE", "Hola actividad nueva");
+					EpubsDownloader downDialog = new EpubsDownloader(
+							MainActivity.this, mApi);
+					downDialog.execute();
 
-				// Añadimos la información al intent
-				intent.putExtras(b);
+					myApp.setmApi(mApi);
+					myApp.setLogueado(true);
 
-				// Iniciamos la nueva actividad
-				startActivity(intent);*/
-								
-			} catch (IllegalStateException e) {
-				Context context1 = getApplicationContext();
-				CharSequence text = "No se ha podido autenticar. Error: " + e.getLocalizedMessage();
-				int duration = Toast.LENGTH_SHORT;
+				} catch (IllegalStateException e) {
+					Context context1 = getApplicationContext();
+					CharSequence text = "No se ha podido autenticar. Error: "
+							+ e.getLocalizedMessage();
+					int duration = Toast.LENGTH_SHORT;
 
-				Toast toast = Toast.makeText(context1, text, duration);
-				toast.show();
-				Log.i("MainActivity:onResume", "Error authenticating", e);
+					Toast toast = Toast.makeText(context1, text, duration);
+					toast.show();
+					Log.e("MainActivity:onResume", "Error authenticating", e);
+				}
 			}
 		}
 	}

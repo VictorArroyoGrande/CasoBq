@@ -3,11 +3,11 @@ package caso.victor_arroyo.dropboxepubs;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
+
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.DialogInterface.OnClickListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,58 +18,35 @@ import com.dropbox.client2.DropboxAPI.ThumbFormat;
 import com.dropbox.client2.DropboxAPI.ThumbSize;
 import com.dropbox.client2.exception.DropboxException;
 
-
 public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 
 	private Context context;
 	private DropboxAPI<?> api;
 
-	private final String dbPath = "/Photos/";
+	private final String dbPath = "/Epubs/";
 
 	private final ProgressDialog pDialog;
-
-	private boolean canceled;
 	private String errorMsg;
 
-    private FileOutputStream mFos;
-    
-    private DBManager dbm;
+	private FileOutputStream mFos;
 
-	@SuppressWarnings("deprecation")
+	private DBManager dbm;
+
 	public EpubsDownloader(Context context, DropboxAPI<?> api) {
 		this.context = context;
 		this.api = api;
-		
+
 		// Creamos una instacia de la base de datos
 		dbm = new DBManager(context);
 
 		pDialog = new ProgressDialog(context);
 		pDialog.setMessage("Descargando EPUBs");
-		pDialog.setButton("Cancel", new OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				canceled = true;
-				errorMsg = "Canceled";
-
-				// This will cancel the getThumbnail operation by closing
-				// its stream
-				/*
-				 * if (mFos != null) { try { mFos.close(); } catch (IOException
-				 * e) { } }
-				 */
-			}
-		});
-
 		pDialog.show();
 
 	}
 
 	@Override
 	protected Boolean doInBackground(Void... arg0) {
-
-		// Comprobamos si el usuario ha cancelado la descarga
-		if (canceled) {
-			return false;
-		}
 
 		try {
 			// Obtenemos los metadatos de la ruta especificada
@@ -87,14 +64,9 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 			ArrayList<Entry> miniaturas = new ArrayList<Entry>();
 			for (Entry ent : md.contents) {
 				if (ent.thumbExists) {
-					// Add it to the list of thumbs we can choose from
+					// Lo insertamos en la lista
 					miniaturas.add(ent);
 				}
-			}
-
-			// Comprobamos si el usuario ha cancelado la descarga
-			if (canceled) {
-				return false;
 			}
 
 			if (miniaturas.size() == 0) {
@@ -104,31 +76,35 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 				return false;
 			}
 
-			for(int i=0;i<miniaturas.size();i++){
+			// Tratamos los contenidos uno a uno
+			for (int i = 0; i < miniaturas.size(); i++) {
+
+				// Creamos un objeto Epub con las caracteristicas del archivo
+				// tratado
 				Entry ent = miniaturas.get(i);
-	            String path = ent.path;
-	            String name = ent.fileName();
-	            String fileName = ent.fileName();
-	            String date = "fecha";
-	            String nombreFichero = "dropboxepub" + i + ".png";
-	            String cachePath = context.getCacheDir().getAbsolutePath() + "/" + nombreFichero;
-	            Epub libro = new Epub(name, date, fileName, path, cachePath);
-	            dbm.addEpub(libro);
+				String path = ent.path;
+				String name = ent.fileName();
+				String fileName = ent.fileName();
+				String nombreFichero = "dropboxepub" + i + ".png";
+				String cachePath = context.getCacheDir().getAbsolutePath()
+						+ "/" + nombreFichero;				
+			    
+				Epub libro = new Epub(name, generaFechaAleatoria(1600,2014), fileName,
+						path, cachePath);
+				// Y lo insertamos en la base de datos
+				dbm.addEpub(libro);
 
-	            try {
-	                mFos = new FileOutputStream(cachePath);
-	            } catch (FileNotFoundException e) {
-	                errorMsg = "Couldn't create a local file to store the image";
-	                return false;
-	            }
+				try {
+					mFos = new FileOutputStream(cachePath);
+				} catch (FileNotFoundException e) {
+					errorMsg = "Couldn't create a local file to store the image";
+					return false;
+				}
 
-	            // This downloads a smaller, thumbnail version of the file.  The
-	            // API to download the actual file is roughly the same.
-	            api.getThumbnail(path, mFos, ThumbSize.BESTFIT_960x640,
-	                    ThumbFormat.JPEG, null);
-	            if (canceled) {
-	                return false;
-	            }	            
+				// Descargamos una miniatura que se encuentra en path y la
+				// almacenamos en la caché en el fichero mFos con formato JPEG
+				api.getThumbnail(path, mFos, ThumbSize.BESTFIT_960x640,
+						ThumbFormat.JPEG, null);
 			}
 
 			return true;
@@ -152,10 +128,9 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 			// Descarga correcta
 			text = "Descarga completa.";
 			Log.i("EpubsDownloader:onPostExecute", (String) text);
-			
-			// Lanzamos la actividad que muestra los libros descargados 
-			Intent intent = new Intent(context,
-					BookListActivity.class);
+
+			// Lanzamos la actividad que muestra los libros descargados
+			Intent intent = new Intent(context, BookListActivity.class);
 
 			// Creamos la información a pasar entre actividades
 			Bundle b = new Bundle();
@@ -177,4 +152,38 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 		toast.show();
 	}
 
+	public java.sql.Date generaFechaAleatoria(int yearMin, int yearMax){
+		Calendar cal = Calendar.getInstance();
+		
+		int año, mes;
+        int dia = 0;
+        año = (int) ((yearMax - yearMin + 1) * Math.random()) + yearMin;
+        mes = (int) (12 * Math.random());
+	    
+        if (mes == 2) {//Mes de febrero
+            if (año % 400 == 0 || año % 4 == 0) {//es bisiesto
+                dia = (int) (29 * Math.random());
+            } else {//No es año bisiesto
+                dia = (int) (28 * Math.random());
+            }
+        } else {
+            if (mes == 1 || mes == 3 || mes == 5 || mes == 7 || mes == 8 || mes == 10 || mes == 12) {
+                //Mes de 31 días
+                dia = (int) (31 * Math.random());
+            } else {//Mes de 30 días
+                dia = (int) Math.random();
+            }
+        } 
+	    // set Date portion to January 1, 1970
+	    cal.set( Calendar.YEAR, año );
+	    cal.set( Calendar.MONTH, mes );
+	    cal.set( Calendar.DATE, dia );
+	    
+	    cal.set( Calendar.HOUR_OF_DAY, 0 );
+	    cal.set( Calendar.MINUTE, 0 );
+	    cal.set( Calendar.SECOND, 0 );
+	    cal.set( Calendar.MILLISECOND, 0 );
+	    
+	    return new java.sql.Date( cal.getTime().getTime() );
+	}
 }

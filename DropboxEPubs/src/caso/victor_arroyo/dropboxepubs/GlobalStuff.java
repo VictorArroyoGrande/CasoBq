@@ -9,6 +9,15 @@ public class GlobalStuff extends Application{
 	
 	String nombre;
 	DropboxAPI<AndroidAuthSession> mApi;
+	boolean logueado = false;
+
+	public boolean isLogueado() {
+		return logueado;
+	}
+
+	public void setLogueado(boolean logueado) {
+		this.logueado = logueado;
+	}
 
 	public DropboxAPI<AndroidAuthSession> getmApi() {
 		return mApi;
