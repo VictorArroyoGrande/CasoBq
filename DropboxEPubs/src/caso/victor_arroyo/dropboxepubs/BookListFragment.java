@@ -90,6 +90,35 @@ public class BookListFragment extends Fragment {
 			}
 		});
 	}
+	
+	public void actualizaListaPorNombreArchivo() {
+
+		List<Epub> libros;
+		libros = dbm.getEpubsListNombreArchivo();
+		datos = new Epub[libros.size()];
+		for (int i = 0; i < libros.size(); i++) {
+			datos[i] = libros.get(i);
+			Log.d("BookListFragment:actualizaListaPorNombreArchivo", "Elemento copiado: "
+					+ i);
+		}
+		Log.d("BookListFragment:actualizaListaPorNombreArchivo",
+				"Tamaño lista: " + libros.size());
+
+		lstListado = (ListView) getView().findViewById(R.id.LstListadoLibros);
+
+		lstListado.setAdapter(new AdaptadorLibros(this));
+
+		lstListado.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> list, View view, int pos,
+					long id) {
+				if (listener != null) {
+					listener.onLibroSeleccionado((Epub) lstListado.getAdapter()
+							.getItem(pos));
+				}
+			}
+		});
+	}
 
 	public void actualizaListaPorFechaAsc() {
 		List<Epub> libros;
@@ -166,6 +195,9 @@ public class BookListFragment extends Fragment {
 
 			TextView lblFecha = (TextView) item.findViewById(R.id.LblFecha);
 			lblFecha.setText(datos[position].getFecha().toString());
+			
+			TextView lblArchivo = (TextView) item.findViewById(R.id.LblNombreArchivo);
+			lblArchivo.setText(datos[position].getNombreArchivo());
 
 			return (item);
 		}

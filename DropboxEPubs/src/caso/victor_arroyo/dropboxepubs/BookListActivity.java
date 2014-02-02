@@ -1,7 +1,6 @@
 package caso.victor_arroyo.dropboxepubs;
 
 import caso.victor_arroyo.dropboxepubs.BookListFragment.LibrosListener;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -11,7 +10,6 @@ import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 public class BookListActivity extends FragmentActivity implements
 		LibrosListener {
@@ -22,6 +20,7 @@ public class BookListActivity extends FragmentActivity implements
 	// 0 = por nombre
 	// 1 = por fecha ascendente
 	// 2 = por fecha descendente
+	// 3 = por nombre archivo
 	int ordenadoPor;
 
 	@Override
@@ -36,7 +35,7 @@ public class BookListActivity extends FragmentActivity implements
 		frgListadoLibros.setLibrosListener(this);
 
 		// Inicializamos el spinner con los valores propuestos
-		final String[] datos = new String[] { "Nombre", "Fecha ascendente",
+		final String[] datos = new String[] { "Titulo", "Nombre archivo", "Fecha ascendente",
 				"Fecha descendente" };
 
 		ArrayAdapter<String> adaptador = new ArrayAdapter<String>(this,
@@ -61,7 +60,7 @@ public class BookListActivity extends FragmentActivity implements
 		btnOrdenar.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (cmbOpciones.getSelectedItem().toString().equals("Nombre")) {
+				if (cmbOpciones.getSelectedItem().toString().equals("Titulo")) {
 					if (ordenadoPor != 0) {
 						Log.i("BookListActivity",
 								"Reordenando la lista por nombre.");
@@ -81,7 +80,18 @@ public class BookListActivity extends FragmentActivity implements
 								.actualizaListaPorFechaAsc();
 						ordenadoPor = 1;
 					}
-				} else {
+				} 
+				else if (cmbOpciones.getSelectedItem().toString()
+						.equals("Nombre archivo")) {
+					if (ordenadoPor != 3) {
+						Log.i("BookListActivity",
+								"Reordenando la lista por nombre de archivo.");
+						((BookListFragment) getSupportFragmentManager()
+								.findFragmentById(R.id.FrgListadoLibros))
+								.actualizaListaPorNombreArchivo();
+						ordenadoPor = 3;
+					}
+				}else {
 					if (ordenadoPor != 2) {
 						Log.i("BookListActivity",
 								"Reordenando la lista por fecha descendente.");
@@ -97,13 +107,6 @@ public class BookListActivity extends FragmentActivity implements
 
 	@Override
 	public void onLibroSeleccionado(Epub l) {
-		Context context1 = getApplicationContext();
-		CharSequence text = "Pulsado libro: " + l.getNombre() + " - "
-				+ l.getFecha();
-		int duration = Toast.LENGTH_LONG;
-
-		Toast toast = Toast.makeText(context1, text, duration);
-		toast.show();
 
 		Intent intent = new Intent(BookListActivity.this, BookDetails.class);
 

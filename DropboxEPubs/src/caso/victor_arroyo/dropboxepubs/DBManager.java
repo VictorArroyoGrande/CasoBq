@@ -132,6 +132,54 @@ public class DBManager extends SQLiteOpenHelper{
 	
 	/**
 	 * This method execute a select sentence in data base to get all epubs in
+	 * "epubs" table ordered by nombreArchivo
+	 * 
+	 * @return epubs list with extracted values from select sentence
+	 * @see Epub
+	 */
+	public ArrayList<Epub> getEpubsListNombreArchivo() {
+		SQLiteDatabase db = this.getWritableDatabase();
+		// Creating a new product list
+		ArrayList<Epub> acl = new ArrayList<Epub>();
+		// Execute query specified in first parameter
+		Cursor cursor = db.rawQuery(
+				"SELECT nombre, nombreArchivo," +
+				         " (strftime('%s', fecha) * 1000) AS fecha," +
+				         " dbPath, cachePath" +
+				         " FROM epubs ORDER BY nombreArchivo COLLATE NOCASE ASC",
+				null);
+		// Getting first result
+		cursor.moveToFirst();
+		if ((cursor != null) && (cursor.getCount() > 0)) {
+			do {
+				// Parsing values of a result
+				String sNombre = cursor.getString(0);
+				String sNombreArchivo = cursor.getString(1);
+				long millis = cursor.getLong(cursor.getColumnIndexOrThrow("fecha"));
+				Date fecha = new Date(millis);
+				String sDbPath = cursor.getString(3);
+				String sCachePath = cursor.getString(4);
+				// Creating a new epub using obtained values
+				Epub cnt = new Epub(sNombre, fecha, sNombreArchivo,
+						sDbPath, sCachePath);
+				
+				 Log.d("DBManager", "getEpubsList: Epub libro: " +
+				 sNombre + " extracted from db");
+				 
+				// Adding new epub to list
+				acl.add(cnt);
+			}
+			// Getting next result
+			while (cursor.moveToNext());
+		}
+		if (db != null) {
+			db.close();
+		}
+		return acl;
+	}
+	
+	/**
+	 * This method execute a select sentence in data base to get all epubs in
 	 * "epubs" table ordered by ascendent date
 	 * 
 	 * @return epubs list with extracted values from select sentence

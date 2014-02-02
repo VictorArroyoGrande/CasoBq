@@ -1,9 +1,18 @@
 package caso.victor_arroyo.dropboxepubs;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+
+import nl.siegmann.epublib.domain.Book;
+import nl.siegmann.epublib.epub.EpubReader;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -13,9 +22,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 import com.dropbox.client2.DropboxAPI;
+import com.dropbox.client2.DropboxAPI.DropboxFileInfo;
 import com.dropbox.client2.DropboxAPI.Entry;
-import com.dropbox.client2.DropboxAPI.ThumbFormat;
-import com.dropbox.client2.DropboxAPI.ThumbSize;
 import com.dropbox.client2.exception.DropboxException;
 
 public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
@@ -27,8 +35,6 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 
 	private final ProgressDialog pDialog;
 	private String errorMsg;
-
-	private FileOutputStream mFos;
 
 	private DBManager dbm;
 
@@ -59,52 +65,102 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 				return false;
 			}
 
-			// De todos los contenidos del directorio, nos quedamos con los que
-			// tengan miniatura
-			ArrayList<Entry> miniaturas = new ArrayList<Entry>();
+			// De todos los contenidos del directorio, nos quedamos con los de
+			// extension .epub
+			ArrayList<Entry> epubs = new ArrayList<Entry>();
 			for (Entry ent : md.contents) {
-				if (ent.thumbExists) {
+				if (ent.fileName().endsWith(".epub")) {
 					// Lo insertamos en la lista
-					miniaturas.add(ent);
+					epubs.add(ent);
 				}
 			}
 
-			if (miniaturas.size() == 0) {
-				// No hay mediaturas
+			if (epubs.size() == 0) {
+				// No hay epubs
 				errorMsg = "No hay libros en el directorio.";
 				Log.e("EpubsDownloader:doInBackground", errorMsg);
 				return false;
 			}
 
 			// Tratamos los contenidos uno a uno
-			for (int i = 0; i < miniaturas.size(); i++) {
+			for (int i = 0; i < epubs.size(); i++) {
 
-				// Creamos un objeto Epub con las caracteristicas del archivo
-				// tratado
-				Entry ent = miniaturas.get(i);
-				String path = ent.path;
-				String name = ent.fileName();
-				String fileName = ent.fileName();
-				String nombreFichero = "dropboxepub" + i + ".png";
+				Entry ent = epubs.get(i);
+
+				// Creamos un fichero en la cache del dispositivo
+				String nombreFichero = "dropboxepub" + i + ".epub";
 				String cachePath = context.getCacheDir().getAbsolutePath()
-						+ "/" + nombreFichero;				
-			    
-				Epub libro = new Epub(name, generaFechaAleatoria(1600,2014), fileName,
-						path, cachePath);
-				// Y lo insertamos en la base de datos
-				dbm.addEpub(libro);
+						+ "/" + nombreFichero;
 
+				File file = new File(cachePath);
+				OutputStream out = null;
 				try {
-					mFos = new FileOutputStream(cachePath);
-				} catch (FileNotFoundException e) {
-					errorMsg = "Couldn't create a local file to store the image";
-					return false;
+					out = new BufferedOutputStream(new FileOutputStream(file));
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
 				}
 
-				// Descargamos una miniatura que se encuentra en path y la
-				// almacenamos en la caché en el fichero mFos con formato JPEG
-				api.getThumbnail(path, mFos, ThumbSize.BESTFIT_960x640,
-						ThumbFormat.JPEG, null);
+				try {
+					// Descargamos el archivo de extension .epub y lo
+					// almacenamos en el fichero que hemos creado
+					DropboxFileInfo info = api.getFile(ent.path, null, out,
+							null);
+
+					Log.d("EpubsDownloader:doInBackground",
+							"El epub se añadió: "
+									+ info.getMetadata().clientMtime);
+
+					// Obtenemos un objeto de tipo Book a partir del fichero
+					// creado
+					InputStream is = null;
+					try {
+						is = new FileInputStream(file);
+						Book book = (new EpubReader()).readEpub(is);
+
+						// Creamos un objeto de tipo Epub gracias a los medios
+						// que nos proporciona el de tipo Book
+						String titulo = book.getTitle();
+						Log.d("EpubsDownloader:doInBackground", "Titulo: "
+								+ titulo);
+						String fecha = info.getMetadata().clientMtime;
+						Log.d("EpubsDownloader:doInBackground", "Fecha: "
+								+ fecha);
+
+						/*
+						DateFormat df = DateFormat.getDateInstance();
+						try {
+							Date date = (Date) df.parse(fecha);
+							Log.d("EpubsDownloader:doInBackground", "Fecha 2: "
+									+ date.toString());
+						} catch (ParseException e) {
+							Log.e("EpubsDownloader:doInBackground", "Error de formato en la fecha");
+						}
+						*/
+						
+						Epub libro = new Epub(titulo, generaFechaAleatoria(
+								1600, 2014), ent.fileName(), ent.path,
+								cachePath);
+
+						// Y lo insertamos en la base de datos
+						dbm.addEpub(libro);
+
+						// Cerramos el fichero
+						is.close();
+					} catch (IOException e) {
+						Log.e("EpubsDownloader:doInBackground",
+								"Error al almacenar el epub.");
+						try {
+							is.close();
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+					}
+
+				} catch (DropboxException e) {
+					Log.e("EpubsDownloader:doInBackground",
+							"Error de descarga.");
+					file.delete();
+				}
 			}
 
 			return true;
@@ -134,7 +190,7 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 
 			// Creamos la información a pasar entre actividades
 			Bundle b = new Bundle();
-			b.putString("NOMBRE", "Hola actividad nueva");
+			b.putString("NOMBRE", "");
 
 			// Añadimos la información al intent
 			intent.putExtras(b);
@@ -152,38 +208,39 @@ public class EpubsDownloader extends AsyncTask<Void, Long, Boolean> {
 		toast.show();
 	}
 
-	public java.sql.Date generaFechaAleatoria(int yearMin, int yearMax){
+	public java.sql.Date generaFechaAleatoria(int yearMin, int yearMax) {
 		Calendar cal = Calendar.getInstance();
-		
+
 		int año, mes;
-        int dia = 0;
-        año = (int) ((yearMax - yearMin + 1) * Math.random()) + yearMin;
-        mes = (int) (12 * Math.random());
-	    
-        if (mes == 2) {//Mes de febrero
-            if (año % 400 == 0 || año % 4 == 0) {//es bisiesto
-                dia = (int) (29 * Math.random());
-            } else {//No es año bisiesto
-                dia = (int) (28 * Math.random());
-            }
-        } else {
-            if (mes == 1 || mes == 3 || mes == 5 || mes == 7 || mes == 8 || mes == 10 || mes == 12) {
-                //Mes de 31 días
-                dia = (int) (31 * Math.random());
-            } else {//Mes de 30 días
-                dia = (int) Math.random();
-            }
-        } 
-	    // set Date portion to January 1, 1970
-	    cal.set( Calendar.YEAR, año );
-	    cal.set( Calendar.MONTH, mes );
-	    cal.set( Calendar.DATE, dia );
-	    
-	    cal.set( Calendar.HOUR_OF_DAY, 0 );
-	    cal.set( Calendar.MINUTE, 0 );
-	    cal.set( Calendar.SECOND, 0 );
-	    cal.set( Calendar.MILLISECOND, 0 );
-	    
-	    return new java.sql.Date( cal.getTime().getTime() );
+		int dia = 0;
+		año = (int) ((yearMax - yearMin + 1) * Math.random()) + yearMin;
+		mes = (int) (12 * Math.random());
+
+		if (mes == 2) {// Mes de febrero
+			if (año % 400 == 0 || año % 4 == 0) {// es bisiesto
+				dia = (int) (29 * Math.random());
+			} else {// No es año bisiesto
+				dia = (int) (28 * Math.random());
+			}
+		} else {
+			if (mes == 1 || mes == 3 || mes == 5 || mes == 7 || mes == 8
+					|| mes == 10 || mes == 12) {
+				// Mes de 31 días
+				dia = (int) (31 * Math.random());
+			} else {// Mes de 30 días
+				dia = (int) Math.random();
+			}
+		}
+		// set Date portion to January 1, 1970
+		cal.set(Calendar.YEAR, año);
+		cal.set(Calendar.MONTH, mes);
+		cal.set(Calendar.DATE, dia);
+
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MILLISECOND, 0);
+
+		return new java.sql.Date(cal.getTime().getTime());
 	}
 }
